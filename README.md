@@ -4,7 +4,7 @@ A GWF plugin for logging extended Slurm accounting records of failed targets in 
 
 ## Usage
 
-```shell
+```raw
 Usage: gwf failed-targets [OPTIONS]
 
   Log records of failed targets.
