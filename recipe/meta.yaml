@@ -1,0 +1,30 @@
+package:
+  name: gwf-failed-targets
+  version: '0.1.0'
+
+source:
+  git_rev: v0.1.0
+  git_url: git@github.com:MOMA-AUH/gwf-failed-targets.git
+
+build:
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python >=3.10
+    - setuptools
+  run:
+    - click
+    - gwf >=2.0.5
+    - gwf-utilization >=0.1.7
+    - python >=3.10
+    - texttable >=1.4.0
+
+about:
+  home: https://github.com/MOMA-AUH/gwf-failed-targets
+  license: MIT + file LICENSE
+  license_file: LICENSE
+  summary: A GWF plugin for logging extended Slurm accounting records of failed targets in a workflow.
