@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gwf-failed-targets"
+version = "0.1.0"
+authors = [{ name = "Jakob Jersild Nielsen", email = "jani@clin.au.dk" }]
+requires-python = ">=3.10"
+dependencies = [
+    "click",
+    "gwf>=2.0.5",
+    "gwf-utilization>=0.1.7",
+    "texttable>=1.4.0",
+]
+
+[project.entry-points."gwf.plugins"]
+failed_targets = "gwf_failed_targets.client:failed_targets"
+
+[project.optional-dependencies]
+dev = ["pytest", "black", "flake8"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
