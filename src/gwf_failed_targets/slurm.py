@@ -3,7 +3,7 @@ import re
 import subprocess
 from dataclasses import dataclass, fields
 from datetime import datetime
-from enum import IntEnum, auto
+from enum import auto, IntEnum
 from gwf.core import Context, Target
 from gwf_utilization.accounting import _parse_memory_string
 from gwf_utilization.main import pretty_size
@@ -19,7 +19,7 @@ TIMEOUT_PATTERN = r"slurmstepd: error: \*\*\* JOB [0-9]+ ON [a-zA-Z0-9_-]+ CANCE
 OOM_PATTERN = r"slurmstepd: error: Detected [0-9]+ oom_kill event in StepId=[0-9]+.batch. Some of the step tasks have been OOM Killed."
 
 
-class Failure(IntEnum):
+class FailureTypes(IntEnum):
     Unknown = auto()
     Timeout = auto()
     OutOfMemory = auto()
@@ -32,7 +32,7 @@ class TargetRecord:
     time_of_failure: datetime
     group: str
     node: str
-    failure: Failure
+    failure_type: FailureTypes
     exit_code: str
     allocated_memory: int
     used_memory: int
@@ -44,7 +44,7 @@ class TargetRecord:
             self.time_of_failure.isoformat(),
             self.group,
             self.node,
-            self.failure._name_,
+            self.failure_type._name_,
             self.exit_code,
             pretty_size(self.allocated_memory),
             pretty_size(self.used_memory),
@@ -106,21 +106,21 @@ class SlurmAccounting:
         self,
         target: Target,
         state: Optional[str] = None,
-    ) -> Failure:
+    ) -> FailureTypes:
         """Determine the cause of failure of a target's slurm job."""
         log_path = Path(self.context.logs_dir) / f"{target.name}.stderr"
         with log_path.open() as f:
             log = "\n".join(tail(f, n=3))
 
         if state == "TIMEOUT" or re.search(pattern=TIMEOUT_PATTERN, string=log):
-            return Failure.Timeout
+            return FailureTypes.Timeout
         elif re.search(pattern=OOM_PATTERN, string=log):
-            return Failure.OutOfMemory
+            return FailureTypes.OutOfMemory
         elif "sbatch: error: Batch job submission failed" in log:
-            return Failure.Submission
+            return FailureTypes.Submission
         elif "Device or resource busy" in log:
-            return Failure.FileSystem
-        return Failure.Unknown
+            return FailureTypes.FileSystem
+        return FailureTypes.Unknown
 
     def fetch(self) -> Generator[TargetRecord, None, None]:
         """Fetch records of failed targets present in tracked jobs."""
@@ -136,7 +136,7 @@ class SlurmAccounting:
         p = subprocess.run(
             args=f"""sacct \
                 --jobs {','.join(jobs.keys())} \
-                --format='{','.join(dict.fromkeys(["JobID", "State"] + self.sacct_fields).keys())}' \
+                --format='{','.join(self.sacct_fields)}' \
                 --parsable2""",
             shell=True,
             stdout=subprocess.PIPE,
@@ -159,7 +159,7 @@ class SlurmAccounting:
                 time_of_failure=self._get_log_modification_time(target=target),
                 group=target.name,  # TODO: Add group attribute upon next GWF release
                 node=accounting["NodeList"],
-                failure=self._determine_cause_of_failure(
+                failure_type=self._determine_cause_of_failure(
                     target=target,
                     state=accounting["State"],
                 ),

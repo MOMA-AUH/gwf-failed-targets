@@ -23,7 +23,7 @@ from gwf_failed_targets.slurm import SlurmAccounting
     "--log-path",
     type=click.Path(path_type=Path),
     help="""Output file path for extended accounting records of failed targets. If not provided,
-            error records will be displayed in a table format on the standard output (stdout).""",
+            the records will be displayed in a table format on the standard output (stdout).""",
 )
 @pass_context
 def failed_targets(

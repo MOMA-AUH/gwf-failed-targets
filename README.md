@@ -25,7 +25,7 @@ Usage: gwf failed-targets [OPTIONS]
 
 Options:
   -f, --log-path PATH  Output file path for extended accounting records of
-                       failed targets. If not provided, error records will be
+                       failed targets. If not provided, the records will be
                        displayed in a table format on the standard output
                        (stdout).
   --help               Show this message and exit.
