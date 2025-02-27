@@ -3,7 +3,6 @@ import re
 import subprocess
 from dataclasses import dataclass, fields
 from datetime import datetime
-from enum import auto, IntEnum
 from gwf.core import Context, Target
 from gwf_utilization.accounting import _parse_memory_string
 from gwf_utilization.main import pretty_size
@@ -12,26 +11,18 @@ from pathlib import Path
 from texttable import Texttable
 from typing import Dict, Generator, List, Optional
 
-from gwf_failed_targets.utilities import tail
+from .utilities import FailureType, tail
 
 
-TIMEOUT_PATTERN = r"slurmstepd: error: \*\*\* JOB [0-9]+ ON [a-zA-Z0-9_-]+ CANCELLED AT [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2} DUE TO TIME LIMIT \*\*\*"
-OOM_PATTERN = r"slurmstepd: error: Detected [0-9]+ oom_kill event in StepId=[0-9]+.batch. Some of the step tasks have been OOM Killed."
-
-
-class FailureType(IntEnum):
-    Unknown = auto()
-    Timeout = auto()
-    OutOfMemory = auto()
-    Submission = auto()
-    FileSystem = auto()
+TIMEOUT_REGEX = r"slurmstepd: error: \*\*\* JOB [0-9]+ ON [a-zA-Z0-9_-]+ CANCELLED AT [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2} DUE TO TIME LIMIT \*\*\*"
+OOM_REGEX = r"slurmstepd: error: Detected [0-9]+ oom_kill event in StepId=[0-9]+.batch. Some of the step tasks have been OOM Killed."
 
 
 @dataclass
 class TargetRecord:
     time_of_failure: datetime
     name: str
-    group: str
+    # group: str
     node: str
     failure_type: FailureType
     exit_code: str
@@ -44,7 +35,7 @@ class TargetRecord:
         return [
             self.time_of_failure.isoformat(),
             self.name,
-            self.group,
+            # self.group,
             self.node,
             self.failure_type._name_,
             self.exit_code,
@@ -114,9 +105,9 @@ class SlurmAccounting:
         with log_path.open() as f:
             log = "\n".join(tail(f, n=3))
 
-        if state == "TIMEOUT" or re.search(pattern=TIMEOUT_PATTERN, string=log):
+        if state == "TIMEOUT" or re.search(pattern=TIMEOUT_REGEX, string=log):
             return FailureType.Timeout
-        elif re.search(pattern=OOM_PATTERN, string=log):
+        elif re.search(pattern=OOM_REGEX, string=log):
             return FailureType.OutOfMemory
         elif "sbatch: error: Batch job submission failed" in log:
             return FailureType.Submission
@@ -160,7 +151,7 @@ class SlurmAccounting:
             yield TargetRecord(
                 time_of_failure=self._get_log_modification_time(target=target),
                 name=target.name,
-                group=target.group,
+                # group=target.group,
                 node=accounting["NodeList"],
                 failure_type=self._determine_cause_of_failure(
                     target=target,
@@ -195,6 +186,10 @@ class SlurmAccounting:
         rows = [TargetRecord.format_header()] + [
             record.format_record() for record in self.fetch()
         ]
+
+        if len(rows) <= 1:
+            # Don't print an empty table.
+            return
 
         table = Texttable()
 

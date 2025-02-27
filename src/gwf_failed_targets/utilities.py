@@ -1,5 +1,14 @@
+from enum import IntEnum, auto
 from io import TextIOWrapper
 from typing import List
+
+
+class FailureType(IntEnum):
+    Unknown = auto()
+    Timeout = auto()
+    OutOfMemory = auto()
+    Submission = auto()
+    FileSystem = auto()
 
 
 def tail(f: TextIOWrapper, n: int = 10) -> List[str]:

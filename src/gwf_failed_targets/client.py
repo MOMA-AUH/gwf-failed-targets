@@ -14,7 +14,7 @@ from gwf.scheduling import get_status_map
 from pathlib import Path
 from typing import Dict
 
-from gwf_failed_targets.slurm import SlurmAccounting
+from .slurm import SlurmAccounting
 
 
 @click.command()
@@ -32,34 +32,39 @@ def failed_targets(
 ):
     """Log records of failed targets."""
     workflow: Workflow = Workflow.from_context(ctx=context)
+
     fs = CachedFilesystem()
     graph = Graph.from_targets(targets=workflow.targets, fs=fs)
-    spec_hashes = get_spec_hashes(
-        working_dir=context.working_dir,
-        config=context.config,
-    )
-    backend = create_backend(
+
+    with create_backend(
         name=context.backend,
         working_dir=context.working_dir,
         config=context.config,
-    )
-    status_map: Dict[Target, Status] = get_status_map(
-        graph=graph,
-        fs=fs,
-        backend=backend,
-        spec_hashes=spec_hashes,
-    )
+    ) as backend:
+        with get_spec_hashes(
+            working_dir=context.working_dir,
+            config=context.config,
+        ) as spec_hashes:
 
-    failed_targets = [
-        target for target, status in status_map.items() if status == Status.FAILED
-    ]
+            status_map: Dict[Target, Status] = get_status_map(
+                graph=graph,
+                fs=fs,
+                backend=backend,
+                spec_hashes=spec_hashes,
+            )
 
-    accounting = SlurmAccounting(
-        context=context,
-        targets=failed_targets,
-    )
+            failed_targets = [
+                target
+                for target, status in status_map.items()
+                if status == Status.FAILED
+            ]
 
-    if log_path is not None:
-        accounting.to_file(path=log_path)
-    else:
-        accounting.to_stdout()
+            accounting = SlurmAccounting(
+                context=context,
+                targets=failed_targets,
+            )
+
+            if log_path is not None:
+                accounting.to_file(path=log_path)
+            else:
+                accounting.to_stdout()
