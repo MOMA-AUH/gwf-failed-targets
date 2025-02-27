@@ -14,6 +14,7 @@ from gwf.scheduling import get_status_map
 from pathlib import Path
 from typing import Dict
 
+from .restart import restart_targets
 from .slurm import SlurmAccounting
 
 
@@ -25,10 +26,28 @@ from .slurm import SlurmAccounting
     help="""Output file path for extended accounting records of failed targets. If not provided,
             the records will be displayed in a table format on the standard output (stdout).""",
 )
+@click.option(
+    "-r",
+    "--restart",
+    is_flag=True,
+    default=False,
+    help="""Restart failed targets and their dependents. Only targets with the following failure types
+            are restartet: [Timeout, OutOfMemory, FileSystem].""",
+)
+@click.option(
+    "-m",
+    "--multiplier",
+    type=float,
+    default=2.0,
+    help="""Multiplicative factor to scale resource options of failed targets. Walltime and memory is
+    multiplied for Timeout and OutOfMemory failures, respectively.""",
+)
 @pass_context
 def failed_targets(
     context: Context,
     log_path: Path,
+    restart: bool,
+    multiplier: float,
 ):
     """Log records of failed targets."""
     workflow: Workflow = Workflow.from_context(ctx=context)
@@ -68,3 +87,13 @@ def failed_targets(
                 accounting.to_file(path=log_path)
             else:
                 accounting.to_stdout()
+
+            if restart:
+                restart_targets(
+                    targets=workflow.targets,
+                    failure_map=accounting.failure_map,
+                    multiplier=multiplier,
+                    fs=fs,
+                    spec_hashes=spec_hashes,
+                    backend=backend,
+                )

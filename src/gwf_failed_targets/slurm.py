@@ -73,6 +73,7 @@ class SlurmAccounting:
         self.context = context
         self.targets = targets
         self.sacct_fields = sacct_fields
+        self.failure_map: dict[Target, FailureType] = {}
 
     @property
     def tracked_jobs(self) -> Dict[str, str]:
@@ -147,16 +148,19 @@ class SlurmAccounting:
                 continue
 
             target = jobs[id]
+            self.failure_map[target] = (
+                failure_type := self._determine_cause_of_failure(
+                    target=target,
+                    state=accounting["State"],
+                )
+            )
 
             yield TargetRecord(
                 time_of_failure=self._get_log_modification_time(target=target),
                 name=target.name,
                 # group=target.group,
                 node=accounting["NodeList"],
-                failure_type=self._determine_cause_of_failure(
-                    target=target,
-                    state=accounting["State"],
-                ),
+                failure_type=failure_type,
                 exit_code=accounting["ExitCode"],
                 allocated_memory=_parse_memory_string(
                     memory_string=accounting["ReqMem"],
