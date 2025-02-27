@@ -30,6 +30,7 @@ class FailureType(IntEnum):
 @dataclass
 class TargetRecord:
     time_of_failure: datetime
+    name: str
     group: str
     node: str
     failure_type: FailureType
@@ -42,6 +43,7 @@ class TargetRecord:
     def format_record(self) -> List[str]:
         return [
             self.time_of_failure.isoformat(),
+            self.name,
             self.group,
             self.node,
             self.failure_type._name_,
@@ -157,7 +159,8 @@ class SlurmAccounting:
 
             yield TargetRecord(
                 time_of_failure=self._get_log_modification_time(target=target),
-                group=target.name,  # TODO: Add group attribute upon next GWF release
+                name=target.name,
+                group=target.group,
                 node=accounting["NodeList"],
                 failure_type=self._determine_cause_of_failure(
                     target=target,
