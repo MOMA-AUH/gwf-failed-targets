@@ -19,7 +19,7 @@ TIMEOUT_PATTERN = r"slurmstepd: error: \*\*\* JOB [0-9]+ ON [a-zA-Z0-9_-]+ CANCE
 OOM_PATTERN = r"slurmstepd: error: Detected [0-9]+ oom_kill event in StepId=[0-9]+.batch. Some of the step tasks have been OOM Killed."
 
 
-class FailureTypes(IntEnum):
+class FailureType(IntEnum):
     Unknown = auto()
     Timeout = auto()
     OutOfMemory = auto()
@@ -32,7 +32,7 @@ class TargetRecord:
     time_of_failure: datetime
     group: str
     node: str
-    failure_type: FailureTypes
+    failure_type: FailureType
     exit_code: str
     allocated_memory: int
     used_memory: int
@@ -106,21 +106,21 @@ class SlurmAccounting:
         self,
         target: Target,
         state: Optional[str] = None,
-    ) -> FailureTypes:
+    ) -> FailureType:
         """Determine the cause of failure of a target's slurm job."""
         log_path = Path(self.context.logs_dir) / f"{target.name}.stderr"
         with log_path.open() as f:
             log = "\n".join(tail(f, n=3))
 
         if state == "TIMEOUT" or re.search(pattern=TIMEOUT_PATTERN, string=log):
-            return FailureTypes.Timeout
+            return FailureType.Timeout
         elif re.search(pattern=OOM_PATTERN, string=log):
-            return FailureTypes.OutOfMemory
+            return FailureType.OutOfMemory
         elif "sbatch: error: Batch job submission failed" in log:
-            return FailureTypes.Submission
+            return FailureType.Submission
         elif "Device or resource busy" in log:
-            return FailureTypes.FileSystem
-        return FailureTypes.Unknown
+            return FailureType.FileSystem
+        return FailureType.Unknown
 
     def fetch(self) -> Generator[TargetRecord, None, None]:
         """Fetch records of failed targets present in tracked jobs."""
