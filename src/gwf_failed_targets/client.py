@@ -40,7 +40,7 @@ from .slurm import SlurmAccounting
     type=float,
     default=2.0,
     help="""Multiplicative factor to scale resource options of failed targets. Walltime and memory is
-    multiplied for Timeout and OutOfMemory failures, respectively.""",
+    multiplied for Timeout and OutOfMemory failures, respectively.""",  # TODO: Implement resource limits.
 )
 @pass_context
 def failed_targets(
