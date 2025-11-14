@@ -46,7 +46,7 @@ class TargetRecord:
         ]
 
     @classmethod
-    def format_header(self) -> List[str]:
+    def format_header(cls) -> List[str]:
         return [field.name.title().replace("_", "") for field in fields(TargetRecord)]
 
 
@@ -89,7 +89,7 @@ class SlurmAccounting:
     def _get_log_modification_time(
         self,
         target: Target,
-    ) -> str:
+    ) -> datetime:
         """Get the last modification time of a target's stderr log file."""
         log_path = Path(self.context.logs_dir) / f"{target.name}.stderr"
         stat = log_path.stat()
@@ -129,8 +129,8 @@ class SlurmAccounting:
 
         p = subprocess.run(
             args=f"""sacct \
-                --jobs {','.join(jobs.keys())} \
-                --format='{','.join(self.sacct_fields)}' \
+                --jobs {",".join(jobs.keys())} \
+                --format='{",".join(self.sacct_fields)}' \
                 --parsable2""",
             shell=True,
             stdout=subprocess.PIPE,
