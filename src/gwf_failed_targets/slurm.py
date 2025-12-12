@@ -19,6 +19,7 @@ OOM_REGEX = r"error: Detected [0-9]+ oom_kill events? in StepId=[0-9]+.batch. So
 FS_LIST = [
     "Device or resource busy",
     "sed: No such file or directory",
+    "python: No such file or directory",
 ]
 
 
