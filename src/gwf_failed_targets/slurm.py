@@ -114,7 +114,7 @@ class SlurmAccounting:
             return FailureType.Timeout
         elif re.search(pattern=OOM_REGEX, string=log):
             return FailureType.OutOfMemory
-        elif "sbatch: error: Batch job submission failed" in log:
+        elif "error: Batch job submission failed" in log:
             return FailureType.Submission
         elif any(s in log for s in FS_LIST):
             return FailureType.FileSystem
