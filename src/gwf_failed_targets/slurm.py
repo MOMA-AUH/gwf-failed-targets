@@ -16,6 +16,10 @@ from .utilities import FailureType, tail
 
 TIMEOUT_REGEX = r"error: \*\*\* JOB [0-9]+ ON [a-zA-Z0-9_-]+ CANCELLED AT [0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2} DUE TO TIME LIMIT \*\*\*"
 OOM_REGEX = r"error: Detected [0-9]+ oom_kill events? in StepId=[0-9]+.batch. Some of the step tasks have been OOM Killed."
+FS_LIST = [
+    "Device or resource busy",
+    "sed: No such file or directory",
+]
 
 
 @dataclass
@@ -112,7 +116,7 @@ class SlurmAccounting:
             return FailureType.OutOfMemory
         elif "sbatch: error: Batch job submission failed" in log:
             return FailureType.Submission
-        elif "Device or resource busy" in log:
+        elif any(s in log for s in FS_LIST):
             return FailureType.FileSystem
         return FailureType.Unknown
 
